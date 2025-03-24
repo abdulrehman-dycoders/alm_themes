@@ -1,0 +1,141 @@
+<div class="bg-white w-full min-h-screen p-2">
+
+  <div class="flex-1 h-full grid grid-cols-[43%_57%] h-[91vh]">
+
+    <div class=" flex items-center  flex-col pt-6">
+      <img src="/images/logo.png" alt="school" class="w-1/4">
+      <div class="flex items-center justify-between w-full px-4">
+        <div>
+          <div class=" font-medium flex justify-center items-center gap-2 mr-5">
+  
+            <img src="/images/sunrise-morning-svgrepo-com.svg" alt="iqamah"
+            class="w-16 h-16 object-cover scale-[0.8]">  
+            <h2 class="text-4xl font-medium uppercase">
+              Sunrise
+            </h2>
+            <span class="flex items-baseline">
+              <% time_part = String.slice("12:00 PM", 0, 5) # Extract "05:15" %>
+              <% am_pm_part = String.slice("12:00 PM", 5, 7) # Extract "AM" or "PM" %>
+              <span class="text-3xl">{time_part}</span>
+              <span class="text-xxl uppercase">{am_pm_part}</span>
+            </span>
+          </div>
+        </div>
+        <div>
+          <div class=" font-medium flex justify-center items-center gap-2 mr-5">
+            <h2 class="text-4xl font-medium uppercase">
+              Sunset
+            </h2>
+            <span class="flex items-baseline">
+              <% time_part = String.slice("12:00 AM", 0, 5) # Extract "05:15" %>
+              <% am_pm_part = String.slice("12:00 AM", 5, 7) # Extract "AM" or "PM" %>
+              <span class="text-3xl">{time_part}</span>
+              <span class="text-xxl uppercase">{am_pm_part}</span>
+            </span>
+            <img src="/images/sunset-4-svgrepo-com.svg" alt="iqamah"
+            class="w-16 h-16 object-cover scale-[0.8]">  
+          </div>
+        </div>
+      </div>
+  
+      <div class="flex items-center justify-center flex-col">
+        <div class="flex items-baseline gap-2" id="digital-clock">
+          <% 
+            # Format is typically "05:37:42 PM"
+            time_parts = if @current_time do 
+              parts = String.split(@current_time, " ")
+              time_section = List.first(parts) || ""
+              am_pm = List.last(parts) || ""
+              
+              time_elements = String.split(time_section, ":")
+              hours = List.first(time_elements) || "00"
+              minutes = if length(time_elements) > 1, do: Enum.at(time_elements, 1), else: "00"
+              
+              %{hours: hours, minutes: minutes, am_pm: am_pm}
+            else
+              %{hours: "00", minutes: "00", am_pm: "AM"}
+            end
+          %>
+          <span class="text-[10rem] font-medium">
+            <span class="digital-clock-hours"><%= time_parts.hours %></span> :
+            <span class="digital-clock-minutes"> <%= time_parts.minutes %></span>
+          </span>
+          <span class="digital-clock-am-pm text-7xl font-medium"><%= time_parts.am_pm %></span>
+        </div>
+
+        <div class="text-2xl relative -top-10" id="today-date">
+          <%= @current_date %>
+        </div>
+
+        <div class="text-2xl flex items-center justify-center gap-2" id="today-date">
+          <span class="digital-countdown text-3xl">Next <%= @next_prayer %> Iqamah in </span>
+          <% 
+            # More robust countdown parsing
+            countdown_parts = if @countdown do
+              parts = String.split(@countdown, ":")
+              hours = List.first(parts) || "00"
+              minutes = if length(parts) > 1, do: Enum.at(parts, 1), else: "00"
+              %{hours: hours, minutes: minutes}
+            else
+              %{hours: "00", minutes: "00"}
+            end
+          %>
+          <span class="flex items-baseline">
+            <span class="text-3xl font-medium"><%= countdown_parts.hours %></span>
+            <span class="text-xxl uppercase">H</span>
+          </span>
+          <span class="flex items-baseline">
+            <span class="text-3xl font-medium"><%= countdown_parts.minutes %></span>
+            <span class="text-xxl uppercase">MIN</span>
+          </span>
+        </div>
+  
+      </div>
+  
+    </div>
+  
+  
+    <div class="flex flex-col gap-2">
+      <div class="pt-1">
+        <h1 class="uppercase text-4xl text-center my-2 tracking-[1rem]">Iqamah Times</h1>
+      </div>
+      <div class="flex-1 grid grid-rows-6 gap-1">
+        <%= for iqamah <- @iqamah_time do %>
+        <div class="bg-skyish w-full flex items-center justify-between p-5">
+          <div class="flex items-center gap-2">
+            <div class="w-16"> 
+              <img src={iqamah.image} alt={iqamah.name}
+                class="w-full h-full object-cover scale-[0.8]"> 
+              </div>
+            <div class="min-w-24 text-4xl font-medium uppercase"> {iqamah.name}</div>
+          </div>
+         
+          <%= for time <- iqamah.times do %>
+          <div class="min-w-24 font-medium flex justify-center items-baseline mr-5">
+            <% time_part = String.slice(time, 0, 5) # Extract "05:15" %>
+            <% am_pm_part = String.slice(time, 5, 7) # Extract "AM" or "PM" %>
+            <span class="text-6xl">{time_part}</span>
+            <span class="text-3xl uppercase">{am_pm_part}</span>
+          </div>
+          <% end %>
+  
+        </div>
+        <%end%>
+  
+      </div>
+     
+  
+    </div>
+  </div>
+  <div class="h-16 w-full flex justify-between items-center">
+    <h1 class="text-2xl font-bold rounded-md p-3 bg-blue-500 text-white">
+      Fajr at 06:00 AM from Monday
+    </h1>
+    <div class="h-16 text-center flex items-end font-sans justify-center gap-4 mr-8">
+      <h1 class="text-2xl font-bold">
+        Only full time K-12 school 
+      </h1>
+      <img src="/images/logo.png" alt="school" class="w-12 h-12">
+    </div>
+  </div>
+</div>
