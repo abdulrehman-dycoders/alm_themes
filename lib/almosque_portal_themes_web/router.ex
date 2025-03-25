@@ -20,6 +20,10 @@ defmodule AlmosquePortalThemesWeb.Router do
     get "/", PageController, :home
     live "/white-iqamah-only", WhiteIqamahOnly
     live "/gray", Gray
+
+    # Hardcoded routes with static values
+    live "/hard/white-iqamah-only", Hard.WhiteIqamahOnly
+    live "/hard/gray", Hard.Gray
   end
 
   # Other scopes may use custom stacks.
