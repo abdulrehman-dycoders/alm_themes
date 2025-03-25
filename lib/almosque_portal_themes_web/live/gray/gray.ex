@@ -1,17 +1,17 @@
-defmodule AlmosquePortalThemesWeb.WhiteIqamahOnly do
+defmodule AlmosquePortalThemesWeb.Gray do
   use AlmosquePortalThemesWeb, :live_view
 
   @iqamah_data [
-    %{name: "fajr", image: "/images/sunrise-morning-svgrepo-com.svg", times: ["06:00 AM"]},
-    %{name: "zuhr", image: "/images/sun-svgrepo-com.svg", times: ["12:00 PM"]},
-    %{name: "asr", image: "/images/sun-cloudy-svgrepo-com.svg", times: ["03:00 PM"]},
-    %{name: "maghrib", image: "/images/sunset-4-svgrepo-com.svg", times: ["06:00 PM"]},
-    %{name: "isha", image: "/images/moon-stars-svgrepo-com.svg", times: ["07:00 PM"]},
-    %{
-      name: "jumu'ah I/II",
-      image: "/images/sun-svgrepo-com (1).svg",
-      times: ["12:00 PM", "01:00 PM"]
-    }
+    %{name: "fajr", start_time: "06:00 AM", adhan_time: "06:30 AM"},
+    %{name: "zuhr", start_time: "12:00 PM", adhan_time: "12:30 PM"},
+    %{name: "asr", start_time: "03:00 PM", adhan_time: "03:30 PM"},
+    %{name: "maghrib", start_time: "06:00 PM", adhan_time: "06:30 PM"},
+    %{name: "isha", start_time: "07:00 PM", adhan_time: "07:30 PM"}
+  ]
+
+  @jumuah_data [
+    %{name: "jumu'ah I", start_time: "12:00 PM", jumuah_time: "01:00 PM"},
+    %{name: "jumu'ah II", start_time: "01:00 PM", jumuah_time: "02:00 PM"}
   ]
 
   # Update every second
@@ -27,9 +27,24 @@ defmodule AlmosquePortalThemesWeb.WhiteIqamahOnly do
     socket =
       socket
       |> assign(:iqamah_time, @iqamah_data)
+      |> assign(:jumuah_data, @jumuah_data)
+      # Default to first Jumu'ah
+      |> assign(:active_jumuah, 0)
+      |> assign(:active_ads, "https://quran.com/")
       |> assign_datetime_and_countdown()
 
-    {:ok, socket}
+    {:ok, assign(socket, active_col: "2", iqamah_data: @iqamah_data)}
+  end
+
+  @impl true
+  def handle_event("select_col", %{"col" => col}, socket) do
+    {:noreply, assign(socket, active_col: col)}
+  end
+
+  @impl true
+  def handle_event("select_jumuah", %{"index" => index}, socket) do
+    index = String.to_integer(index)
+    {:noreply, assign(socket, active_jumuah: index)}
   end
 
   @impl true
@@ -47,7 +62,7 @@ defmodule AlmosquePortalThemesWeb.WhiteIqamahOnly do
     time = Calendar.strftime(now, "%I:%M:%S %p")
 
     # Find the next prayer time for countdown
-    next_prayer_info = get_next_prayer(now, @iqamah_data)
+    next_prayer_info = get_next_prayer(now, @iqamah_data, @jumuah_data)
 
     socket
     |> assign(:current_date, date)
@@ -56,7 +71,7 @@ defmodule AlmosquePortalThemesWeb.WhiteIqamahOnly do
     |> assign(:countdown, next_prayer_info.countdown)
   end
 
-  defp get_next_prayer(now, iqamah_data) do
+  defp get_next_prayer(now, iqamah_data, jumuah_data) do
     current_hour = now.hour
     current_minute = now.minute
     current_weekday = Date.day_of_week(now)
@@ -66,14 +81,39 @@ defmodule AlmosquePortalThemesWeb.WhiteIqamahOnly do
 
     # Create list of prayer times with their time in minutes
     prayer_times_with_minutes =
-      Enum.flat_map(iqamah_data, fn prayer ->
-        # Special case for Jumu'ah - only on Friday (day 5)
-        if prayer.name =~ "jumu'ah" and current_weekday != 5 do
-          []
-        else
-          Enum.map(prayer.times, fn time_str ->
-            # Parse time string like "06:00 AM"
-            [time, am_pm] = String.split(time_str, " ")
+      Enum.map(iqamah_data, fn prayer ->
+        # Parse time string like "06:00 AM"
+        [time, am_pm] = String.split(prayer.start_time, " ")
+        [hour_str, minute_str] = String.split(time, ":")
+
+        hour = String.to_integer(hour_str)
+        minute = String.to_integer(minute_str)
+
+        # Adjust for AM/PM
+        hour =
+          case {hour, am_pm} do
+            {12, "AM"} -> 0
+            {12, "PM"} -> 12
+            {h, "AM"} -> h
+            {h, "PM"} -> h + 12
+          end
+
+        minutes_from_midnight = hour * 60 + minute
+
+        %{
+          name: prayer.name,
+          time: prayer.start_time,
+          minutes_from_midnight: minutes_from_midnight
+        }
+      end)
+
+    # Add Jumuah times if it's Friday
+    prayer_times_with_minutes =
+      if current_weekday == 5 do
+        jumuah_times =
+          Enum.map(jumuah_data, fn prayer ->
+            # Parse time string like "12:00 PM"
+            [time, am_pm] = String.split(prayer.start_time, " ")
             [hour_str, minute_str] = String.split(time, ":")
 
             hour = String.to_integer(hour_str)
@@ -92,12 +132,15 @@ defmodule AlmosquePortalThemesWeb.WhiteIqamahOnly do
 
             %{
               name: prayer.name,
-              time: time_str,
+              time: prayer.start_time,
               minutes_from_midnight: minutes_from_midnight
             }
           end)
-        end
-      end)
+
+        prayer_times_with_minutes ++ jumuah_times
+      else
+        prayer_times_with_minutes
+      end
 
     # Find the next prayer time
     next_prayer =

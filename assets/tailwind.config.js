@@ -16,6 +16,9 @@ module.exports = {
       colors: {
         brand: "#FD4F00",
         skyish: '#e2ebf2',
+        parrotLight: '#c1d38b',
+        parrot: '#91b455',
+        darkGreen: '#2d4429',
       }
     },
   },

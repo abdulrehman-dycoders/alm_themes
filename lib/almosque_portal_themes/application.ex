@@ -10,7 +10,8 @@ defmodule AlmosquePortalThemes.Application do
     children = [
       AlmosquePortalThemesWeb.Telemetry,
       AlmosquePortalThemes.Repo,
-      {DNSCluster, query: Application.get_env(:almosque_portal_themes, :dns_cluster_query) || :ignore},
+      {DNSCluster,
+       query: Application.get_env(:almosque_portal_themes, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: AlmosquePortalThemes.PubSub},
       # Start the Finch HTTP client for sending emails
       {Finch, name: AlmosquePortalThemes.Finch},

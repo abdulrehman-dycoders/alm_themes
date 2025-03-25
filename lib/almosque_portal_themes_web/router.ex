@@ -19,6 +19,7 @@ defmodule AlmosquePortalThemesWeb.Router do
 
     get "/", PageController, :home
     live "/white-iqamah-only", WhiteIqamahOnly
+    live "/gray", Gray
   end
 
   # Other scopes may use custom stacks.
