@@ -2,17 +2,28 @@ defmodule AlmosquePortalThemesWeb.Gray do
   use AlmosquePortalThemesWeb, :live_view
 
   @iqamah_data [
-    %{name: "fajr", start_time: "06:00 AM", adhan_time: "06:30 AM"},
-    %{name: "zuhr", start_time: "12:00 PM", adhan_time: "12:30 PM"},
-    %{name: "asr", start_time: "03:00 PM", adhan_time: "03:30 PM"},
-    %{name: "maghrib", start_time: "06:00 PM", adhan_time: "06:30 PM"},
-    %{name: "isha", start_time: "07:00 PM", adhan_time: "07:30 PM"}
+    %{name: "fajr", image: "/images/sunrise-morning-svgrepo-com.svg", start_time: "06:00 AM", adhan_time: "06:30 AM"},
+    %{name: "zuhr", image: "/images/sun-svgrepo-com.svg", start_time: "12:00 PM", adhan_time: "12:30 PM"},
+    %{name: "asr", image: "/images/sun-cloudy-svgrepo-com.svg", start_time: "03:00 PM", adhan_time: "03:30 PM"},
+    %{name: "maghrib", image: "/images/sunset-4-svgrepo-com.svg", start_time: "06:00 PM", adhan_time: "06:30 PM"},
+    %{name: "isha", image: "/images/moon-stars-svgrepo-com.svg", start_time: "07:00 PM", adhan_time: "07:30 PM"}
   ]
 
   @jumuah_data [
-    %{name: "jumu'ah I", start_time: "12:00 PM", jumuah_time: "01:00 PM"},
-    %{name: "jumu'ah II", start_time: "01:00 PM", jumuah_time: "02:00 PM"}
+    %{name: "jumu'ah I", image: "/images/sun-svgrepo-com (1).svg", start_time: "12:00 PM", jumuah_time: "01:00 PM"},
+    %{name: "jumu'ah II", image: "/images/sun-svgrepo-com (1).svg", start_time: "01:00 PM", jumuah_time: "02:00 PM"}
   ]
+
+  # Map prayer names to their index in the table
+  @prayer_indices %{
+    "fajr" => "0",
+    "zuhr" => "1",
+    "asr" => "2",
+    "maghrib" => "3",
+    "isha" => "4",
+    "jumu'ah I" => "1",  # Jumu'ah I happens at Zuhr time
+    "jumu'ah II" => "1"  # Jumu'ah II also mapped to Zuhr column
+  }
 
   # Update every second
   @timer_interval 1000
@@ -24,21 +35,22 @@ defmodule AlmosquePortalThemesWeb.Gray do
       Process.send_after(self(), :tick, @timer_interval)
     end
 
-    socket =
+    # Set up initial socket state
+    socket_with_data =
       socket
-      |> assign(:iqamah_time, @iqamah_data)
+      |> assign(:iqamah_data, @iqamah_data)
       |> assign(:jumuah_data, @jumuah_data)
       # Default to first Jumu'ah
       |> assign(:active_jumuah, 0)
-      |> assign(:active_ads, "https://quran.com/")
+      |> assign(:active_ads, "/images/mosque-d5.jpg")
       |> assign_datetime_and_countdown()
 
-    {:ok, assign(socket, active_col: "2", iqamah_data: @iqamah_data)}
-  end
+    # Get the next prayer from the updated socket
+    next_prayer = socket_with_data.assigns.next_prayer
+    # Get column index for that prayer (default to "0" if not found)
+    active_col = Map.get(@prayer_indices, next_prayer, "0")
 
-  @impl true
-  def handle_event("select_col", %{"col" => col}, socket) do
-    {:noreply, assign(socket, active_col: col)}
+    {:ok, assign(socket_with_data, active_col: active_col)}
   end
 
   @impl true
@@ -53,7 +65,18 @@ defmodule AlmosquePortalThemesWeb.Gray do
     Process.send_after(self(), :tick, @timer_interval)
 
     # Update time and countdown
-    {:noreply, assign_datetime_and_countdown(socket)}
+    updated_socket = assign_datetime_and_countdown(socket)
+
+    # Get the next prayer and update active column if needed
+    next_prayer = updated_socket.assigns.next_prayer
+    active_col = Map.get(@prayer_indices, next_prayer, "0")
+
+    # Only update active_col if it's different to avoid unnecessary re-renders
+    if socket.assigns.active_col != active_col do
+      {:noreply, assign(updated_socket, active_col: active_col)}
+    else
+      {:noreply, updated_socket}
+    end
   end
 
   defp assign_datetime_and_countdown(socket) do
